@@ -1,28 +1,23 @@
-from aiogram import Bot, types
+import asyncio
+
+from aiogram import Bot
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor
 
+from app.handlers.start_handler import StartHandler
 from config import TOKEN
 
-bot = Bot(token=TOKEN)
-dispatcher = Dispatcher(bot)
 
-
-@dispatcher.message_handler(commands=['start', 'help'])
-async def process_help(message: types.Message):
-    await message.reply("""
-Привет! 
-    Если нужна помощь в подготовке к экзамену, можешь попросить меня \
-присылать тебе задания. 
-    Я могу собирать статистику, задавать вопросы, \
-в которых больше всего ошибок, и постоянно напоминать тебе о важности ученья.
-    """)
-
-
-@dispatcher.message_handler()
-async def echo_message(message: types.Message):
-    await bot.send_message(message.from_user.id, message.text)
+async def shutdown(d: Dispatcher):
+    await d.storage.close()
+    await d.storage.wait_closed()
 
 
 if __name__ == '__main__':
-    executor.start_polling(dispatcher)
+    bot = Bot(token=TOKEN)
+    dispatcher = Dispatcher(bot, storage=MemoryStorage())
+    dispatcher.middleware.setup(LoggingMiddleware())
+    StartHandler(dispatcher).register_handler()
+    executor.start_polling(dispatcher, on_shutdown=shutdown)
