@@ -1,1 +1,4 @@
-TOKEN = "YOUR_TOKEN"
+TOKEN = ""
+OWNER_ID = 0
+PATH = ""
+MODERATORS = []
