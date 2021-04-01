@@ -1,10 +1,10 @@
-from aiogram import Dispatcher
+from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
 
+import exam_bot.commands
 import exam_bot.handlers
-from exam_bot.commands import *
-from exam_bot.messages import *
+import exam_bot.messages
 
 
 async def moderator_panel(message: types.message, state: FSMContext):
@@ -20,7 +20,7 @@ async def back(message: types.message, state: FSMContext):
 async def print_moders(message: types.message, state: FSMContext):
     await Admin.WAITING_MODER.set()
     async with state.proxy() as data:
-        if message.text in ADD_MODER.values():
+        if message.text in exam_bot.commands.ADD_MODER.values():
             data["mode"] = "add"
         else:
             data["mode"] = "delete"
@@ -34,14 +34,14 @@ async def add_del_moder(message: types.message, state: FSMContext):
     if mode == "add":
         await exam_bot.handlers.admin.Admin.ADMIN_PANEL.set()
         await exam_bot.handlers.start.add_moder(message.text)
-        await exam_bot.handlers.start.reply_by_dict(MODER_ADDED, message, state)
+        await exam_bot.handlers.start.reply_by_dict(exam_bot.messages.MODER_ADDED, message, state)
     else:
         if not await exam_bot.handlers.start.is_moder(message.text):
-            await exam_bot.handlers.start.reply_by_dict(WRONG_MODER, message, state)
+            await exam_bot.handlers.start.reply_by_dict(exam_bot.messages.WRONG_MODER, message, state)
         else:
             await exam_bot.handlers.admin.Admin.ADMIN_PANEL.set()
             await exam_bot.handlers.start.del_moder(message.text)
-            await exam_bot.handlers.start.reply_by_dict(MODER_DELETED, message, state)
+            await exam_bot.handlers.start.reply_by_dict(exam_bot.messages.MODER_DELETED, message, state)
 
 
 class Admin(StatesGroup):
@@ -52,11 +52,12 @@ class Admin(StatesGroup):
         self.dp = dispatcher
 
     def register_handler(self):
-        self.dp.register_message_handler(back, lambda m: m.text in BACK.values(), state=Admin.all_states)
-        self.dp.register_message_handler(print_moders,
-                                         lambda m: m.text in ADD_MODER.values() or m.text in DEL_MODER.values(),
+        self.dp.register_message_handler(back, lambda m: m.text in exam_bot.commands.BACK.values(),
+                                         state=Admin.all_states)
+        self.dp.register_message_handler(print_moders, lambda
+            m: m.text in exam_bot.commands.ADD_MODER.values() or m.text in exam_bot.commands.DEL_MODER.values(),
                                          state=self.ADMIN_PANEL)
         self.dp.register_message_handler(add_del_moder, state=self.WAITING_MODER)
-        self.dp.register_message_handler(moderator_panel, lambda m: m.text in MODER_PANEL.values(),
+        self.dp.register_message_handler(moderator_panel, lambda m: m.text in exam_bot.commands.MODER_PANEL.values(),
                                          state=self.ADMIN_PANEL)
         self.dp.register_message_handler(exam_bot.handlers.start.unknown, state=Admin.all_states)

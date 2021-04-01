@@ -1,14 +1,13 @@
-from aiogram import Dispatcher, Bot
+from aiogram import Dispatcher, Bot, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup
 
 import exam_bot.bot
+import exam_bot.commands
+import exam_bot.config
 import exam_bot.handlers
-from exam_bot import config
-from exam_bot.commands import *
-from exam_bot.config import OWNER_ID
-from exam_bot.keyboards import keyboard
-from exam_bot.messages import *
+import exam_bot.keyboards
+import exam_bot.messages
 
 
 async def getOrSetDefault(state: FSMContext, key: str, default):
@@ -22,17 +21,19 @@ async def getOrSetDefault(state: FSMContext, key: str, default):
 
 # Send msg to the user's language with keyboard
 async def reply(msg: str, message: types.message, state: FSMContext):
-    await message.reply(msg, reply=False, reply_markup=await keyboard(message, state))
+    await message.reply(msg, reply=False, reply_markup=await exam_bot.keyboards.keyboard(message, state))
 
 
 # Get messages dict and send msg corresponding to the user's language with keyboard
 async def reply_by_dict(text_dict: dict, message: types.message, state: FSMContext):
-    await message.reply(text_dict[lang(message)], reply=False, reply_markup=await keyboard(message, state))
+    await message.reply(text_dict[exam_bot.messages.lang(message)], reply=False,
+                        reply_markup=await exam_bot.keyboards.keyboard(message, state))
 
 
 async def reply_welcome(message: types.message, state: FSMContext):
-    await message.reply(welcome_msg[await state.get_state()][lang(message)], reply=False,
-                        reply_markup=await keyboard(message, state))
+    await message.reply(exam_bot.messages.welcome_msg[await state.get_state()][exam_bot.messages.lang(message)],
+                        reply=False,
+                        reply_markup=await exam_bot.keyboards.keyboard(message, state))
 
 
 async def is_moder(user_id: str):
@@ -52,7 +53,7 @@ async def get_moders():
 
 
 async def start(message: types.message, state: FSMContext):
-    await reply_by_dict(HELP_MSG, message, state)
+    await reply_by_dict(exam_bot.messages.HELP_MSG, message, state)
 
 
 async def get_id(message: types.message, state: FSMContext):
@@ -60,7 +61,7 @@ async def get_id(message: types.message, state: FSMContext):
 
 
 async def admin_panel(message: types.message, state: FSMContext):
-    if message.from_user.id != OWNER_ID:
+    if message.from_user.id != exam_bot.config.OWNER_ID:
         await unknown(message, state)
     else:
         await exam_bot.handlers.admin.Admin.ADMIN_PANEL.set()
@@ -81,7 +82,7 @@ async def get_question(message: types.message, state: FSMContext):
 
 
 async def unknown(message: types.message, state: FSMContext):
-    await reply_by_dict(UNKNOWN_MSG, message, state)
+    await reply_by_dict(exam_bot.messages.UNKNOWN_MSG, message, state)
 
 
 async def back(message: types.message, state: FSMContext):
@@ -94,8 +95,8 @@ async def get_state(message: types.message, state: FSMContext):
 
 
 async def error(update, exception):
-    if config.ERRORS_IN_CHAT:
-        await Bot.get_current().send_message(OWNER_ID, f"Error happened! {exception}")
+    if exam_bot.config.ERRORS_IN_CHAT:
+        await Bot.get_current().send_message(exam_bot.config.OWNER_ID, f"Error happened! {exception}")
     await update.message.reply("Error happened! Please, contact the developer")
 
 
@@ -105,12 +106,16 @@ class Start(StatesGroup):
 
     def register_handler(self):
         self.dp.register_errors_handler(error)
-        self.dp.register_message_handler(start, lambda m: m.text == "/start" or m.text in ABOUT.values(),
+        self.dp.register_message_handler(start,
+                                         lambda m: m.text == "/start" or m.text in exam_bot.commands.ABOUT.values(),
                                          state=None)
-        self.dp.register_message_handler(get_question, lambda m: m.text in GET_QUESTION.values(), state=None)
+        self.dp.register_message_handler(get_question, lambda m: m.text in exam_bot.commands.GET_QUESTION.values(),
+                                         state=None)
         self.dp.register_message_handler(get_id, commands="getId", state=None)
-        self.dp.register_message_handler(admin_panel, lambda m: m.text in ADMIN_PANEL.values(), state=None)
-        self.dp.register_message_handler(moder_panel, lambda m: m.text in MODER_PANEL.values(), state=None)
-        self.dp.register_message_handler(back, lambda m: m.text in BACK.values(), state=None)
+        self.dp.register_message_handler(admin_panel, lambda m: m.text in exam_bot.commands.ADMIN_PANEL.values(),
+                                         state=None)
+        self.dp.register_message_handler(moder_panel, lambda m: m.text in exam_bot.commands.MODER_PANEL.values(),
+                                         state=None)
+        self.dp.register_message_handler(back, lambda m: m.text in exam_bot.commands.BACK.values(), state=None)
         self.dp.register_message_handler(get_state, commands="getstate", state="*")
         self.dp.register_message_handler(unknown, state=None)
