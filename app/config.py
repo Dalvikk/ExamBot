@@ -1,4 +1,0 @@
-TOKEN = ""
-OWNER_ID = 0
-PATH = ""
-MODERATORS = []

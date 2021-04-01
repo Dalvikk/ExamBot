@@ -1,19 +1,21 @@
 import os
 from random import Random
 
+import exam_bot
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
-from app.commands import *
-from app.config import PATH
-from app.keyboards import keyboard
-from app.messages import welcome_msg, lang, QUESTION_NOT_EXIST
+
+import exam_bot.messages
+from exam_bot.commands import *
+from exam_bot.config import PATH
+from exam_bot.keyboards import keyboard, lang
+from exam_bot.messages import QUESTION_NOT_EXIST
 
 
 async def back(message: types.message, state: FSMContext):
     await General.previous()
-    await message.reply(welcome_msg[await state.get_state()][lang(message)], reply=False,
-                        reply_markup=await keyboard(message, state))
+    await exam_bot.handlers.start.reply_welcome(message, state)
 
 
 async def question_type_select(message: types.message, state: FSMContext):
@@ -24,8 +26,7 @@ async def question_type_select(message: types.message, state: FSMContext):
         await print_task(path, message, state)
     else:
         await General.WAITING_COURSE.set()
-        await message.reply(welcome_msg[await state.get_state()][lang(message)], reply=False,
-                            reply_markup=await keyboard(message, state))
+        await exam_bot.handlers.start.reply_welcome(message, state)
 
 
 async def print_modules(message: types.message, state: FSMContext):
@@ -37,8 +38,7 @@ async def print_modules(message: types.message, state: FSMContext):
         await print_task(path, message, state)
     else:
         await General.WAITING_MODULE.set()
-        await message.reply(welcome_msg[await state.get_state()][lang(message)], reply=False,
-                            reply_markup=await keyboard(message, state))
+        await exam_bot.handlers.start.reply_welcome(message, state)
 
 
 async def print_questions(message: types.message, state: FSMContext):
@@ -50,8 +50,7 @@ async def print_questions(message: types.message, state: FSMContext):
         await print_task(path, message, state)
     else:
         await General.WAITING_QUESTION.set()
-        await message.reply(welcome_msg[await state.get_state()][lang(message)], reply=False,
-                            reply_markup=await keyboard(message, state))
+        await exam_bot.handlers.start.reply_welcome(message, state)
 
 
 async def random_path(cur_path: str):
@@ -69,22 +68,22 @@ async def print_task(path: str, message: types.message, state: FSMContext):
     await General.WAITING_ANSWER.set()
     async with state.proxy() as data:
         data["question"] = path
-    name = os.path.basename(path)
-    await message.reply(name, reply=False, reply_markup=await keyboard(message, state))
+    await exam_bot.handlers.start.reply(os.path.basename(path), message, state)
 
 
 async def print_answer(message: types.message, state: FSMContext):
     async with state.proxy() as data:
         pass
     path = data["question"]
-    await state.reset_state()
+    await state.reset_state(with_data=False)
     if not os.path.isdir(path):
-        await message.reply(QUESTION_NOT_EXIST[lang(message)], reply=False, reply_markup=await keyboard(message, state))
+        await exam_bot.handlers.start.reply_by_dict(QUESTION_NOT_EXIST, message, state)
+        return
     media = types.MediaGroup()
     for file in os.listdir(path):
         media.attach_document(types.InputFile(path + "/" + file), "file: " + file)
     await message.reply_media_group(media, reply=False)
-    await message.reply("Here it is", reply=False, reply_markup=await keyboard(message, state))
+    await exam_bot.handlers.start.reply_by_dict(exam_bot.messages.ANSWER_LOADED, message, state)
 
 
 class General(StatesGroup):
@@ -110,4 +109,4 @@ class General(StatesGroup):
         self.dp.register_message_handler(process_concrete, state=General.WAITING_QUESTION)
         self.dp.register_message_handler(print_answer, lambda m: m.text in GET_ANSWER.values(),
                                          state=General.WAITING_ANSWER)
-        self.dp.register_message_handler(app.handlers.start.unknown, state=General.all_states)
+        self.dp.register_message_handler(exam_bot.handlers.start.unknown, state=General.all_states)

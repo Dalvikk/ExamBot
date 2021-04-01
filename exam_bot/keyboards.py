@@ -3,9 +3,10 @@ import os
 from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardMarkup
 
-from commands import *
-from config import *
-from messages import *
+import exam_bot
+from exam_bot.commands import *
+from exam_bot.config import *
+from exam_bot.messages import *
 
 
 async def keyboard(m: types.Message, state: FSMContext) -> ReplyKeyboardMarkup:
@@ -127,14 +128,14 @@ async def QUESTION_LIST_KEYBOARD(m: types.Message, state: FSMContext) -> ReplyKe
 async def WAITING_MODER_KEYBOARD(m: types.Message) -> ReplyKeyboardMarkup:
     markup = ReplyKeyboardMarkup(resize_keyboard=True).add(BACK[lang(m)])
     if m.text in DEL_MODER.values():
-        for MODERATOR in MODERATORS:
-            markup.add(str(MODERATOR))
+        for MODERATOR in await exam_bot.handlers.start.get_moders():
+            markup.add(MODERATOR)
     return markup
 
 
 async def default_keyboard(m: types.Message) -> ReplyKeyboardMarkup:
     if m.from_user.id == OWNER_ID:
         return DEFAULT_ADMIN_KEYBOARD[lang(m)]
-    elif str(m.from_user.id) in MODERATORS:
+    elif str(m.from_user.id) in await exam_bot.handlers.start.get_moders():
         return DEFAULT_MODERATOR_KEYBOARD[lang(m)]
     return DEFAULT_KEYBOARD[lang(m)]

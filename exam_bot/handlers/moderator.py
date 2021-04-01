@@ -8,29 +8,27 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.types import ContentType
 
-from app.commands import *
-from app.config import *
-from app.keyboards import keyboard
-from app.messages import *
+import exam_bot
+from exam_bot.commands import *
+from exam_bot.config import *
+from exam_bot.keyboards import keyboard
+from exam_bot.messages import *
 
 
 async def back(message: types.message, state: FSMContext):
     if message.from_user.id == OWNER_ID and await state.get_state() == "Moder:MODERATOR_PANEL":
-        await app.handlers.admin.Admin.ADMIN_PANEL.set()
-        await message.reply(welcome_msg[await state.get_state()][lang(message)], reply=False,
-                            reply_markup=await keyboard(message, state))
+        await exam_bot.handlers.admin.Admin.ADMIN_PANEL.set()
+        await exam_bot.handlers.start.reply_welcome(message, state)
     else:
         await Moder.previous()
-        await message.reply(welcome_msg[await state.get_state()][lang(message)], reply=False,
-                            reply_markup=await keyboard(message, state))
+        await exam_bot.handlers.start.reply_welcome(message, state)
 
 
 async def print_courses(message: types.message, state: FSMContext):
     async with state.proxy() as data:
         data["mode"] = message.text
     await Moder.WAITING_COURSE.set()
-    await message.reply(welcome_msg[await state.get_state()][lang(message)], reply=False,
-                        reply_markup=await keyboard(message, state))
+    await exam_bot.handlers.start.reply_welcome(message, state)
 
 
 async def print_modules(message: types.message, state: FSMContext):
@@ -43,7 +41,7 @@ async def print_modules(message: types.message, state: FSMContext):
         await successfully_deleted(message, state)
     else:
         await Moder.WAITING_MODULE.set()
-        await message.reply(welcome_msg[await state.get_state()][lang(message)], reply=False, reply_markup=await keyboard(message, state))
+        await exam_bot.handlers.start.reply_welcome(message, state)
 
 
 async def print_questions(message: types.message, state: FSMContext):
@@ -56,8 +54,7 @@ async def print_questions(message: types.message, state: FSMContext):
         await successfully_deleted(message, state)
     else:
         await Moder.WAITING_QUESTION.set()
-        await message.reply(welcome_msg[await state.get_state()][lang(message)], reply=False,
-                            reply_markup=await keyboard(message, state))
+        await exam_bot.handlers.start.reply_welcome(message, state)
 
 
 async def ask_answer(message: types.message, state: FSMContext):
@@ -70,12 +67,11 @@ async def ask_answer(message: types.message, state: FSMContext):
         await successfully_deleted(message, state)
     else:
         await Moder.WAITING_ANSWER.set()
-        await message.reply(welcome_msg[await state.get_state()][lang(message)], reply=False,
-                            reply_markup=await keyboard(message, state))
+        await exam_bot.handlers.start.reply_welcome(message, state)
 
 
 async def successfully_deleted(message: types.message, state: FSMContext):
-    await message.reply(SUCCESSFUL[lang(message)], reply=False, reply_markup=await keyboard(message, state))
+    await exam_bot.handlers.start.reply_by_dict(SUCCESSFUL, message, state)
 
 
 async def delete_dir(cur_path: str, depth: int):
@@ -95,8 +91,9 @@ async def load_answer(message: types.message, state: FSMContext, album: List[typ
         album = [message]
     async with state.proxy() as data:
         s = data["question"]
-        if not path.isdir(s):
-            os.makedirs(s)
+        if path.isdir(s):
+            shutil.rmtree(s)
+        os.makedirs(s)
     bot = Bot.get_current()
     for (idx, obj) in enumerate(album):
         if obj.photo:
@@ -105,8 +102,7 @@ async def load_answer(message: types.message, state: FSMContext, album: List[typ
             file = obj[obj.content_type]
         file_path = (await bot.get_file(file.file_id)).file_path
         await file.download(s + "/" + str(idx) + path.splitext(file_path)[1])
-    await message.reply(SUCCESSFUL[lang(message)], reply=False,
-                        reply_markup=await keyboard(message, state))
+    await exam_bot.handlers.start.reply_by_dict(SUCCESSFUL, message, state)
 
 
 class Moder(StatesGroup):
@@ -121,16 +117,14 @@ class Moder(StatesGroup):
 
     def register_handler(self):
         self.dp.register_message_handler(back, lambda m: m.text in BACK.values(), state=Moder.all_states)
-        self.dp.register_message_handler(print_courses,
-                                         lambda m: m.text in ADD_QUESTION.values()
-                                                   or m.text in DEL_QUESTION.values()
-                                                   or m.text in DEL_MODULE.values()
-                                                   or m.text in DEL_COURSE.values(),
-                                         state=self.MODERATOR_PANEL)
+        self.dp.register_message_handler(print_courses, lambda m:
+        m.text in ADD_QUESTION.values()
+        or m.text in DEL_QUESTION.values() or m.text in DEL_MODULE.values()
+        or m.text in DEL_COURSE.values(), state=self.MODERATOR_PANEL)
         self.dp.register_message_handler(print_modules, state=self.WAITING_COURSE)
         self.dp.register_message_handler(print_questions, state=self.WAITING_MODULE)
         self.dp.register_message_handler(ask_answer, state=self.WAITING_QUESTION)
         self.dp.register_message_handler(load_answer, is_media_group=True, state=self.WAITING_ANSWER,
                                          content_types=ContentType.ANY)
         self.dp.register_message_handler(load_answer, state=self.WAITING_ANSWER, content_types=ContentType.ANY)
-        self.dp.register_message_handler(app.handlers.start.unknown, state=Moder.all_states)
+        self.dp.register_message_handler(exam_bot.handlers.start.unknown, state=Moder.all_states)
