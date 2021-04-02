@@ -95,7 +95,7 @@ async def get_state(message: types.message, state: FSMContext):
 
 
 async def error(update, exception):
-    if exam_bot.config.ERRORS_IN_CHAT:
+    if exam_bot.config.SEND_ERRORS:
         await Bot.get_current().send_message(exam_bot.config.OWNER_ID, f"Error happened! {exception}")
     await update.message.reply("Error happened! Please, contact the developer")
 
