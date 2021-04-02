@@ -45,3 +45,11 @@ set SEND_ERRORS="True" // "True" if you want that exceptions message will sent t
 4. Make sure Mongodb is running
 5. Run  
 >  `python ./exam_bot/bot.py`
+> 
+> 
+## TODO list
+* Add multi-language support
+* New feature: users will be able to rate themselves, and the bot will collect statistics. The functions "give the question with the worst rating" will be added
+* Reminder: ask a random question every `n` minutes
+* Fix bugs related to race condition
+* Optimize files sending by sending file_id which will be stored for each file
