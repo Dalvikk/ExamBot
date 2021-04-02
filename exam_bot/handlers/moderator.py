@@ -119,9 +119,9 @@ class Moder(StatesGroup):
         self.dp.register_message_handler(back, lambda m: m.text in exam_bot.commands.BACK.values(),
                                          state=Moder.all_states)
         self.dp.register_message_handler(print_courses, lambda m:
-        m.text in exam_bot.commands.ADD_QUESTION.values()
-        or m.text in exam_bot.commands.DEL_QUESTION.values() or m.text in exam_bot.commands.DEL_MODULE.values()
-        or m.text in exam_bot.commands.DEL_COURSE.values(), state=self.MODERATOR_PANEL)
+            m.text in exam_bot.commands.ADD_QUESTION.values()
+            or m.text in exam_bot.commands.DEL_QUESTION.values() or m.text in exam_bot.commands.DEL_MODULE.values()
+            or m.text in exam_bot.commands.DEL_COURSE.values(), state=self.MODERATOR_PANEL)
         self.dp.register_message_handler(print_modules, state=self.WAITING_COURSE)
         self.dp.register_message_handler(print_questions, state=self.WAITING_MODULE)
         self.dp.register_message_handler(ask_answer, state=self.WAITING_QUESTION)

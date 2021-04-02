@@ -15,6 +15,10 @@ MongoDB is used to store states in FSM
 
 ![example](.github/images/1.png)
 
+## FSM image
+
+![FSM](.github/images/2.png)
+
 ## Run
 
 0. Install [mongoDB](https://www.mongodb.com/)
